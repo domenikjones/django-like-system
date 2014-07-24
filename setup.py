@@ -11,5 +11,4 @@ setup(
     license='BSD licence, see LICENCE.rst',
     description='Django based like system. Inspired by django.contrib.comments.',
     long_description=open('README.md').read(),
-    zip_safe=False,
 )
