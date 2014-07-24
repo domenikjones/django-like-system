@@ -1,4 +1,4 @@
 Django Like System
 ==================
 
-Django based like system. Inspired by django.contrib.comments.
+Django based like system. Based on django.contrib.comments.
