@@ -2,8 +2,8 @@
 from distutils.core import setup
 
 setup(
-    name='django-like-syste',
-    version='0.0.1',
+    name='django-like-system',
+    version='0.0.1-alpha1',
     author=u'Domenik Jones',
     author_email='domenik.jones.gmail.com',
     packages=['like_system'],

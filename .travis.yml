@@ -1,13 +1,28 @@
 language: python
+# python version
 python:
     - "2.7"
 #    - "3.2"
 #    - "3.3"
+
+# env
 env:
     - DJANGO_PACKAGE="Django>=1.5,<1.6"
     - DJANGO_PACKAGE="Django>=1.6,<1.7"
+
+# pip install
 install:
     - pip install $DJANGO_PACKAGE --use-mirrors
-    - pip install Pillow
+    - pip install coveralls
+
+# scripts
 script:
     - django-admin.py --version
+    - coverage run --source=moscowdjango,meetup manage.py test
+after_success:
+  coveralls
+
+# test only master branch
+branches:
+  only:
+    - master
