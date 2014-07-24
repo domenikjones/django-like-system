@@ -3,7 +3,7 @@
 .project
 .settings
 .idea
-.atlassian-ide-plugin.xml
+atlassian-ide-plugin.xml
 .idea/
 
 # Byte-compiled / optimized / DLL files
