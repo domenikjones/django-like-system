@@ -1,0 +1,9 @@
+include AUTHORS.rst
+include CHANGELOG.rst
+include LICENSE
+include README.rm
+recursive-include like_system/static *
+recursive-include like_system/templates *
+recursive-include like_system/templatetags *
+recursive-include like_system/tests *
+recursive-include like_system/utils *
