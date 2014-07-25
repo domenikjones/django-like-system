@@ -7,5 +7,5 @@ class BasicTests(TestCase):
         pass
 
     def create_a_like_on_a_site(self):
-        print "create_a_like_on_a_site"
+
         self.assertEqual(1, 1)
