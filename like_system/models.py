@@ -56,12 +56,11 @@ class Like(BaseLikeAbstractModel):
     submit_date = models.DateTimeField(_('date/time submitted'), default=None)
 
     # Manager
-    # objects = CommentManager()
+    # objects = LikeManager()
 
     class Meta:
-        db_table = "like_system"
-        ordering = ('submit_date',)
-        # permissions = [("can_moderate", "Can moderate comments")]
+        db_table = "django_like_system"
+        ordering = ('-submit_date',)
         verbose_name = _('like')
         verbose_name_plural = _('likes')
 

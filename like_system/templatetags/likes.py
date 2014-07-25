@@ -1,15 +1,18 @@
 from django import template
 from django.conf import settings
+from django.contrib.sites.models import get_current_site
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_text
 from django.contrib.contenttypes.models import ContentType
 
 import like_system
+from like_system.models import Like
 
 register = template.Library()
 
 
+# Base
 class BaseLikeNode(template.Node):
     """
     Base helper class (abstract) for handling the get_like_* template tags.
@@ -54,6 +57,7 @@ class BaseLikeNode(template.Node):
         except ContentType.DoesNotExist:
             raise template.TemplateSyntaxError("%r tag has non-existant content-type: '%s.%s'" % (tagname, app, model))
 
+    # init
     def __init__(self, ctype=None, object_pk_expr=None, object_expr=None, as_varname=None, like=None):
         if ctype is None and object_expr is None:
             raise template.TemplateSyntaxError("Like nodes must be given either a literal object or a ctype and object pk.")
@@ -63,11 +67,6 @@ class BaseLikeNode(template.Node):
         self.object_pk_expr = object_pk_expr
         self.object_expr = object_expr
         self.like = like
-
-    def render(self, context):
-        qs = self.get_query_set(context)
-        context[self.as_varname] = self.get_context_value_from_queryset(context, qs)
-        return ''
 
     def get_query_set(self, context):
         ctype, object_pk = self.get_target_ctype_pk(context)
@@ -91,12 +90,56 @@ class BaseLikeNode(template.Node):
         else:
             return self.ctype, self.object_pk_expr.resolve(context, ignore_failures=True)
 
+    def render(self, context):
+        qs = self.get_query_set(context)
+        context[self.as_varname] = self.get_context_value_from_queryset(context, qs)
+        return ''
+
     def get_context_value_from_queryset(self, context, qs):
         """Subclasses should override this."""
         raise NotImplementedError
 
 
+# Base Link
+class BaseLikeLinkNode(BaseLikeNode):
+    """
+    Abstracted base link node, override get_context_value_from_queryset
+    """
+    def get_context_value_from_queryset(self, context, qs):
+        pass
 
+    def render(self, context):
+        # qs = self.get_query_set(context)
+        context[self.as_varname] = self.get_like_link_for_qt(context)
+        return ''
+
+    def get_like_link_for_qt(self, context):
+        """Subclasses should override this."""
+        raise NotImplementedError
+
+
+# Base Liked
+class BaseLikedLinkNode(BaseLikeNode):
+    """
+    Abstracted base liked node, override get_context_value_from_queryset
+    """
+    def get_context_value_from_queryset(self, context, qs):
+        pass
+
+    def render(self, context):
+        # qs = self.get_query_set(context)
+        context[self.as_varname] = self.get_liked_this(context)
+        return ''
+
+    def get_liked_this(self, context):
+        """Subclasses should override this."""
+        raise NotImplementedError
+
+
+
+
+
+# List Nodes
 class LikeListNode(BaseLikeNode):
     """Insert a list of comments into the context."""
     def get_context_value_from_queryset(self, context, qs):
@@ -107,19 +150,43 @@ class LikeCountNode(BaseLikeNode):
     def get_context_value_from_queryset(self, context, qs):
         return qs.count()
 
-class LikeLinkNode(BaseLikeNode):
-    """Insert a count of likes into the context."""
-    def get_context_value_from_queryset(self, context, qs):
-        obj, pk = self.get_target_ctype_pk(context)
 
+
+# Link Nodes
+class LikeLinkNode(BaseLikeLinkNode):
+    """Insert a count of likes into the context."""
+    def get_like_link_for_qt(self, context):
+        obj, pk = self.get_target_ctype_pk(context)
         return reverse('like_system-like', kwargs={'content_type':obj.model, 'object_pk':pk })
 
-class UnlikeLinkNode(BaseLikeNode):
+class UnlikeLinkNode(BaseLikeLinkNode):
     """Insert a count of likes into the context."""
-    def get_context_value_from_queryset(self, context, qs):
+    def get_like_link_for_qt(self, context):
         obj, pk = self.get_target_ctype_pk(context)
-
         return reverse('like_system-unlike', kwargs={'content_type':obj.model, 'object_pk':pk })
+
+
+
+# Liked Node
+class LikedLinkNode(BaseLikedLinkNode):
+    """Insert a count of likes into the context."""
+    def get_liked_this(self, context):
+        obj, pk = self.get_target_ctype_pk(context)
+        # get unique like
+        try:
+            like = Like.objects.get(site=get_current_site(context),
+                                   user=context['user'],
+                                   content_type=obj,
+                                   object_pk=pk
+            )
+            return True
+        except:
+            pass
+
+        return False
+
+
+
 
 
 
@@ -161,15 +228,20 @@ def get_like_list(parser, token):
     """
     return LikeListNode.handle_token(parser, token)
 
-
 @register.tag
 def get_like_link(parser, token):
     """
-    Get the permalink for a comment, optionally specifying the format of the
-    named anchor to be appended to the end of the URL.
+    Get the like link for a content_type and pk.
 
-    Example::
-        {% get_comment_permalink comment "#c%(id)s-by-%(user_name)s" %}
+    Syntax::
+
+        {% get_like_link for [object] as [varname]  %}
+        {% get_like_link for [app].[model] [object_id] as [varname]  %}
+
+    Example usage::
+
+        {% get_like_link for event as like_link %}
+        {{ like_link }}
     """
 
     return LikeLinkNode.handle_token(parser, token)
@@ -177,11 +249,23 @@ def get_like_link(parser, token):
 @register.tag
 def get_unlike_link(parser, token):
     """
-    Get the permalink for a comment, optionally specifying the format of the
-    named anchor to be appended to the end of the URL.
+    Get the unlike link for a content_type and pk.
 
-    Example::
-        {% get_comment_permalink comment "#c%(id)s-by-%(user_name)s" %}
+    Syntax::
+
+        {% get_unlike_link for [object] as [varname]  %}
+        {% get_unlike_link for [app].[model] [object_id] as [varname]  %}
+
+    Example usage::
+
+        {% get_unlike_link for event as unlike_link %}
+        {{ unlike_link }}
     """
 
     return UnlikeLinkNode.handle_token(parser, token)
+
+
+@register.tag()
+def liked_this(parser, token):
+
+    return LikedLinkNode.handle_token(parser, token)

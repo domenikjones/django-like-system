@@ -1,6 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import get_current_site
-from django.http.response import HttpResponse
+from django.http.response import HttpResponse, HttpResponseRedirect
 
 from like_system.models import Like
 
@@ -28,6 +28,12 @@ def like(request, content_type=None, object_pk=None):
         )
         like.save()
 
+    # return path given in url
+    try:
+        return HttpResponseRedirect(request.GET.get('return'))
+    except:
+        pass
+
     return HttpResponse(like)
 
 
@@ -43,6 +49,12 @@ def unlike(request, content_type=None, object_pk=None):
                          object_pk=object_pk
         ).delete()
     except:
-        return HttpResponse(False)
+        pass
+
+    # return path given in url
+    try:
+        return HttpResponseRedirect(request.GET.get('return'))
+    except:
+        pass
 
     return HttpResponse(True)
