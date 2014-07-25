@@ -11,7 +11,7 @@ SITE_ID = 1
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
+        'NAME': os.path.join(PROJECT_DIR, 'test.db'),
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
@@ -41,6 +41,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
 
     'like_system',
+    'example',
 )
 
 STATIC_ROOT = '/tmp/'  # Dummy
