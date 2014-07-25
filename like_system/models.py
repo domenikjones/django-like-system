@@ -32,9 +32,13 @@ class BaseLikeAbstractModel(models.Model):
         """
         Get a URL suitable for redirecting to the content object.
         """
-        return reverse("likes-url-redirect",
-                       args=(self.content_type_id, self.object_pk)
-        )
+        try:
+            return reverse("likes-url-redirect",
+                           args=(self.content_type_id, self.object_pk)
+            )
+        except:
+            return ('/')
+
 
 
 
@@ -65,7 +69,10 @@ class Like(BaseLikeAbstractModel):
         verbose_name_plural = _('likes')
 
     def __str__(self):
-        return "%s" % (self.user.username)
+        if self.user.username:
+            return "%s" % (self.user.username)
+        else:
+            return "N/A"
 
 
     def save(self, *args, **kwargs):
